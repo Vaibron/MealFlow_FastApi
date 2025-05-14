@@ -1,0 +1,404 @@
+{% extends "sqladmin/layout.html" %}
+
+{% block content %}
+<div class="container mt-5">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-success alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="card shadow-lg border-0 animate__animated animate__fadeIn">
+    <div class="card-header bg-gradient-warning text-white d-flex align-items-center">
+      <i class="fas fa-edit me-2"></i>
+      <h2 class="mb-0">Редактировать рецепт: {{ obj.title }}</h2>
+    </div>
+    <div class="card-body p-4">
+      <!-- Форма редактирования рецепта -->
+      <form method="POST" action="{{ request.url }}" id="recipe-form" enctype="multipart/form-data">
+        <div class="mb-4 position-relative">
+          <label for="title" class="form-label fw-bold text-muted"><i class="fas fa-heading me-2"></i> Название рецепта</label>
+          {{ form.title(class="form-control form-control-lg shadow-sm", placeholder="Введите название рецепта", required=True) }}
+        </div>
+        <div class="mb-4 position-relative">
+          <label for="description" class="form-label fw-bold text-muted"><i class="fas fa-align-left me-2"></i> Описание</label>
+          {{ form.description(class="form-control shadow-sm", rows="3", placeholder="Краткое описание рецепта (опционально)") }}
+        </div>
+        <div class="mb-4 position-relative">
+          <label for="total_time" class="form-label fw-bold text-muted"><i class="fas fa-clock me-2"></i> Общее время (мин)</label>
+          {{ form.total_time(class="form-control shadow-sm", placeholder="Введите общее время приготовления", required=True) }}
+        </div>
+        <div class="mb-4 position-relative">
+          <label for="servings" class="form-label fw-bold text-muted"><i class="fas fa-users me-2"></i> Количество порций</label>
+          {{ form.servings(class="form-control shadow-sm", placeholder="Введите количество порций", required=True) }}
+        </div>
+        <div class="mb-4 position-relative">
+          <label for="calories" class="form-label fw-bold text-muted"><i class="fas fa-fire me-2"></i> Калории</label>
+          {{ form.calories(class="form-control shadow-sm", placeholder="Калории на порцию (опционально)") }}
+        </div>
+        <div class="mb-4 position-relative">
+          <label for="proteins" class="form-label fw-bold text-muted"><i class="fas fa-egg me-2"></i> Белки</label>
+          {{ form.proteins(class="form-control shadow-sm", placeholder="Белки на порцию (опционально)") }}
+        </div>
+        <div class="mb-4 position-relative">
+          <label for="fats" class="form-label fw-bold text-muted"><i class="fas fa-cheese me-2"></i> Жиры</label>
+          {{ form.fats(class="form-control shadow-sm", placeholder="Жиры на порцию (опционально)") }}
+        </div>
+        <div class="mb-4 position-relative">
+          <label for="carbohydrates" class="form-label fw-bold text-muted"><i class="fas fa-bread-slice me-2"></i> Углеводы</label>
+          {{ form.carbohydrates(class="form-control shadow-sm", placeholder="Углеводы на порцию (опционально)") }}
+        </div>
+        <div class="mb-4 form-check">
+          {{ form.is_public(class="form-check-input") }}
+          <label class="form-check-label" for="is_public"><i class="fas fa-globe me-2"></i> Сделать рецепт общедоступным</label>
+        </div>
+
+        <!-- Секция шагов -->
+        <div class="card mb-4 shadow-sm">
+          <div class="card-header bg-light d-flex align-items-center">
+            <i class="fas fa-list-ol me-2 text-primary"></i>
+            <h4 class="mb-0">Шаги приготовления</h4>
+          </div>
+          <div class="card-body" id="steps-container">
+            {% for step in obj.steps %}
+              <div class="step-entry row mb-3 align-items-center animate__animated animate__fadeIn">
+                <div class="col-md-2">
+                  <label class="form-label fw-bold text-muted">Номер шага</label>
+                  <input type="number" name="steps-{{ loop.index0 }}-step_number" class="form-control shadow-sm" value="{{ step.step_number }}" min="1" required>
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label fw-bold text-muted">Описание</label>
+                  <input type="text" name="steps-{{ loop.index0 }}-description" class="form-control shadow-sm" value="{{ step.description }}" placeholder="Опишите шаг" required>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label fw-bold text-muted">Длительность (мин)</label>
+                  <input type="number" name="steps-{{ loop.index0 }}-duration" class="form-control shadow-sm" value="{{ step.duration or '' }}" placeholder="Длительность" min="0" step="1">
+                </div>
+                <div class="col-md-3">
+                  <button type="button" class="btn btn-danger remove-step w-100 mt-3 shadow-sm">
+                    <i class="fas fa-trash-alt"></i> Удалить
+                  </button>
+                </div>
+              </div>
+            {% endfor %}
+            {% if not obj.steps %}
+              <div class="step-entry row mb-3 align-items-center animate__animated animate__fadeIn">
+                <div class="col-md-2">
+                  <label class="form-label fw-bold text-muted">Номер шага</label>
+                  <input type="number" name="steps-0-step_number" class="form-control shadow-sm" value="1" min="1" required>
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label fw-bold text-muted">Описание</label>
+                  <input type="text" name="steps-0-description" class="form-control shadow-sm" placeholder="Опишите шаг" required>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label fw-bold text-muted">Длительность (мин)</label>
+                  <input type="number" name="steps-0-duration" class="form-control shadow-sm" placeholder="Длительность" min="0" step="1">
+                </div>
+                <div class="col-md-3">
+                  <button type="button" class="btn btn-danger remove-step w-100 mt-3 shadow-sm">
+                    <i class="fas fa-trash-alt"></i> Удалить
+                  </button>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        <button type="button" id="add-step" class="btn btn-outline-primary mb-4 shadow-sm">
+          <i class="fas fa-plus-circle me-2"></i> Добавить шаг
+        </button>
+
+        <!-- Секция ингредиентов -->
+        <div class="card mb-4 shadow-sm">
+          <div class="card-header bg-light d-flex align-items-center">
+            <i class="fas fa-carrot me-2 text-warning"></i>
+            <h4 class="mb-0">Ингредиенты</h4>
+          </div>
+          <div class="card-body" id="ingredients-container">
+            {% for ingredient in form.ingredients %}
+              <div class="ingredient-entry row mb-3 align-items-center animate__animated animate__fadeIn">
+                <div class="col-md-5">
+                  <label class="form-label fw-bold text-muted">{{ ingredient.ingredient_id.label }}</label>
+                  {{ ingredient.ingredient_id(class="form-control shadow-sm") }}
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-bold text-muted">{{ ingredient.amount.label }}</label>
+                  {{ ingredient.amount(class="form-control shadow-sm", placeholder="Количество") }}
+                </div>
+                <div class="col-md-3">
+                  <button type="button" class="btn btn-danger remove-ingredient w-100 mt-3 shadow-sm">
+                    <i class="fas fa-trash-alt"></i> Удалить
+                  </button>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+        <button type="button" id="add-ingredient" class="btn btn-outline-primary mb-4 shadow-sm">
+          <i class="fas fa-plus-circle me-2"></i> Добавить ингредиент
+        </button>
+
+        <!-- Секция типов блюд -->
+        <div class="card mb-4 shadow-sm">
+          <div class="card-header bg-light d-flex align-items-center">
+            <i class="fas fa-utensils me-2 text-success"></i>
+            <h4 class="mb-0">Типы блюд</h4>
+          </div>
+          <div class="card-body" id="meal-types-container">
+            {% for meal_type in form.meal_types %}
+              <div class="meal-type-entry row mb-3 align-items-center animate__animated animate__fadeIn">
+                <div class="col-md-9">
+                  <label class="form-label fw-bold text-muted">{{ meal_type.meal_type_id.label }}</label>
+                  {{ meal_type.meal_type_id(class="form-control shadow-sm") }}
+                </div>
+                <div class="col-md-3">
+                  <button type="button" class="btn btn-danger remove-meal-type w-100 mt-3 shadow-sm">
+                    <i class="fas fa-trash-alt"></i> Удалить
+                  </button>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+        <button type="button" id="add-meal-type" class="btn btn-outline-primary mb-4 shadow-sm">
+          <i class="fas fa-plus-circle me-2"></i> Добавить тип блюда
+        </button>
+
+        <!-- Секция категорий блюд -->
+        <div class="card mb-4 shadow-sm">
+          <div class="card-header bg-light d-flex align-items-center">
+            <i class="fas fa-folder me-2 text-info"></i>
+            <h4 class="mb-0">Категории блюд</h4>
+          </div>
+          <div class="card-body" id="dish-categories-container">
+            {% for dish_category in form.dish_categories %}
+              <div class="dish-category-entry row mb-3 align-items-center animate__animated animate__fadeIn">
+                <div class="col-md-9">
+                  <label class="form-label fw-bold text-muted">{{ dish_category.dish_category_id.label }}</label>
+                  {{ dish_category.dish_category_id(class="form-control shadow-sm") }}
+                </div>
+                <div class="col-md-3">
+                  <button type="button" class="btn btn-danger remove-dish-category w-100 mt-3 shadow-sm">
+                    <i class="fas fa-trash-alt"></i> Удалить
+                  </button>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+        <button type="button" id="add-dish-category" class="btn btn-outline-primary mb-4 shadow-sm">
+          <i class="fas fa-plus-circle me-2"></i> Добавить категорию блюда
+        </button>
+
+        <!-- Секция тегов -->
+        <div class="card mb-4 shadow-sm">
+          <div class="card-header bg-light d-flex align-items-center">
+            <i class="fas fa-tags me-2 text-secondary"></i>
+            <h4 class="mb-0">Теги</h4>
+          </div>
+          <div class="card-body" id="tags-container">
+            {% for tag in form.tags %}
+              <div class="tag-entry row mb-3 align-items-center animate__animated animate__fadeIn">
+                <div class="col-md-9">
+                  <label class="form-label fw-bold text-muted">{{ tag.tag_id.label }}</label>
+                  {{ tag.tag_id(class="form-control shadow-sm") }}
+                </div>
+                <div class="col-md-3">
+                  <button type="button" class="btn btn-danger remove-tag w-100 mt-3 shadow-sm">
+                    <i class="fas fa-trash-alt"></i> Удалить
+                  </button>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+        <button type="button" id="add-tag" class="btn btn-outline-primary mb-4 shadow-sm">
+          <i class="fas fa-plus-circle me-2"></i> Добавить тег
+        </button>
+
+        <!-- Кнопки управления -->
+        <div class="text-end">
+          <a href="/admin/recipe/list" class="btn btn-outline-secondary btn-lg me-2 shadow-sm">
+            <i class="fas fa-times me-2"></i> Отмена
+          </a>
+          <button type="submit" class="btn btn-success btn-lg shadow-sm">
+            <i class="fas fa-save me-2"></i> Сохранить
+          </button>
+        </div>
+      </form>
+
+      <!-- Форма загрузки изображения -->
+      <div class="mt-4">
+        <h4>Изменить изображение</h4>
+        {% if obj.image_path %}
+          <div class="mb-2">
+            <p>Текущее изображение: {{ obj.image_path }}</p>
+            <img src="{{ url_for('get_recipe_image', recipe_id=obj.id) }}" alt="Current Image" style="max-width: 200px;"/>
+          </div>
+        {% endif %}
+        <form id="image-upload-form" enctype="multipart/form-data">
+          <div class="mb-3">
+            <label for="image" class="form-label fw-bold text-muted"><i class="fas fa-image me-2"></i> Новое изображение</label>
+            <input type="file" name="image" id="image" class="form-control shadow-sm" accept="image/*">
+          </div>
+          <button type="submit" class="btn btn-primary shadow-sm">Загрузить изображение</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Подключение стилей и скриптов -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+<style>
+  .bg-gradient-warning {
+    background: linear-gradient(90deg, #ffca2c, #ffdd88);
+  }
+  .btn:hover {
+    transform: translateY(-2px);
+    transition: all 0.3s ease;
+  }
+  .form-control:focus {
+    border-color: #ffca2c;
+    box-shadow: 0 0 10px rgba(255, 202, 44, 0.5);
+  }
+</style>
+
+<script>
+  document.getElementById('add-step').addEventListener('click', function() {
+    const container = document.getElementById('steps-container');
+    const entries = container.querySelectorAll('.step-entry');
+    const index = entries.length;
+    const entry = document.createElement('div');
+    entry.className = 'step-entry row mb-3 align-items-center animate__animated animate__fadeIn';
+    entry.innerHTML = `
+      <div class="col-md-2">
+        <label class="form-label fw-bold text-muted">Номер шага</label>
+        <input type="number" name="steps-${index}-step_number" class="form-control shadow-sm" value="${index + 1}" min="1" required>
+      </div>
+      <div class="col-md-5">
+        <label class="form-label fw-bold text-muted">Описание</label>
+        <input type="text" name="steps-${index}-description" class="form-control shadow-sm" placeholder="Опишите шаг" required>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label fw-bold text-muted">Длительность (мин)</label>
+        <input type="number" name="steps-${index}-duration" class="form-control shadow-sm" placeholder="Длительность" min="0" step="1">
+      </div>
+      <div class="col-md-3">
+        <button type="button" class="btn btn-danger remove-step w-100 mt-3 shadow-sm">
+          <i class="fas fa-trash-alt"></i> Удалить
+        </button>
+      </div>
+    `;
+    container.appendChild(entry);
+  });
+
+  document.getElementById('add-ingredient').addEventListener('click', function() {
+    const container = document.getElementById('ingredients-container');
+    const entry = container.querySelector('.ingredient-entry').cloneNode(true);
+    const index = container.querySelectorAll('.ingredient-entry').length;
+    entry.querySelectorAll('select, input').forEach(input => {
+      if (input.tagName === 'SELECT') input.selectedIndex = 0;
+      else input.value = '';
+      input.name = input.name.replace(/\d+/, index);
+    });
+    container.appendChild(entry);
+  });
+
+  document.getElementById('add-meal-type').addEventListener('click', function() {
+    const container = document.getElementById('meal-types-container');
+    const entry = container.querySelector('.meal-type-entry').cloneNode(true);
+    const index = container.querySelectorAll('.meal-type-entry').length;
+    entry.querySelectorAll('select').forEach(select => {
+      select.selectedIndex = 0;
+      select.name = select.name.replace(/\d+/, index);
+    });
+    container.appendChild(entry);
+  });
+
+  document.getElementById('add-dish-category').addEventListener('click', function() {
+    const container = document.getElementById('dish-categories-container');
+    const entry = container.querySelector('.dish-category-entry').cloneNode(true);
+    const index = container.querySelectorAll('.dish-category-entry').length;
+    entry.querySelectorAll('select').forEach(select => {
+      select.selectedIndex = 0;
+      select.name = select.name.replace(/\d+/, index);
+    });
+    container.appendChild(entry);
+  });
+
+  document.getElementById('add-tag').addEventListener('click', function() {
+    const container = document.getElementById('tags-container');
+    const entry = container.querySelector('.tag-entry').cloneNode(true);
+    const index = container.querySelectorAll('.tag-entry').length;
+    entry.querySelectorAll('select').forEach(select => {
+      select.selectedIndex = 0;
+      select.name = select.name.replace(/\d+/, index);
+    });
+    container.appendChild(entry);
+  });
+
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('remove-step')) {
+      const entries = document.querySelectorAll('.step-entry');
+      if (entries.length > 1) {
+        e.target.closest('.step-entry').classList.add('animate__fadeOut');
+        setTimeout(() => e.target.closest('.step-entry').remove(), 500);
+      }
+    }
+    if (e.target.classList.contains('remove-ingredient')) {
+      const entries = document.querySelectorAll('.ingredient-entry');
+      if (entries.length > 1) {
+        e.target.closest('.ingredient-entry').classList.add('animate__fadeOut');
+        setTimeout(() => e.target.closest('.ingredient-entry').remove(), 500);
+      }
+    }
+    if (e.target.classList.contains('remove-meal-type')) {
+      const entries = document.querySelectorAll('.meal-type-entry');
+      if (entries.length > 1) {
+        e.target.closest('.meal-type-entry').classList.add('animate__fadeOut');
+        setTimeout(() => e.target.closest('.meal-type-entry').remove(), 500);
+      }
+    }
+    if (e.target.classList.contains('remove-dish-category')) {
+      const entries = document.querySelectorAll('.dish-category-entry');
+      if (entries.length > 1) {
+        e.target.closest('.dish-category-entry').classList.add('animate__fadeOut');
+        setTimeout(() => e.target.closest('.dish-category-entry').remove(), 500);
+      }
+    }
+    if (e.target.classList.contains('remove-tag')) {
+      const entries = document.querySelectorAll('.tag-entry');
+      if (entries.length > 1) {
+        e.target.closest('.tag-entry').classList.add('animate__fadeOut');
+        setTimeout(() => e.target.closest('.tag-entry').remove(), 500);
+      }
+    }
+  });
+
+  document.getElementById('image-upload-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const recipeId = {{ obj.id }};
+    try {
+      const response = await fetch(`/api/admin/recipe/upload-image/${recipeId}`, {
+        method: 'POST',
+        body: formData
+      });
+      const result = await response.json();
+      if (response.ok) {
+        alert('Изображение успешно загружено!');
+        location.reload();
+      } else {
+        alert('Ошибка загрузки изображения: ' + result.detail);
+      }
+    } catch (error) {
+      alert('Произошла ошибка: ' + error.message);
+    }
+  });
+</script>
+{% endblock %}
